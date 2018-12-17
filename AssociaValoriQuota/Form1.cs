@@ -401,8 +401,8 @@ namespace AssociaValoriQuota
                 comboBox = ComboO;
             }
 
-            IEnumerable<string> QuoteEllissoidicheList=File.ReadLines(ELLI_File_Path);
-            IEnumerable<string> QuoteOrtometricheList= File.ReadLines(ORTO_File_Path);
+            List<string> QuoteEllissoidicheList=new List<string>(File.ReadLines(ELLI_File_Path));
+            List<string> QuoteOrtometricheList= new List<string>(File.ReadLines(ORTO_File_Path));
 
             //controllo la completezza delle scelte utente sulle combobox
             bool Campisegnalati = ControllaCampiUtente();
@@ -435,6 +435,7 @@ namespace AssociaValoriQuota
             var lines = ISelli_File == true ? QuoteEllissoidicheList : QuoteOrtometricheList;//System.IO.File.ReadLines(FilePath);
             foreach ( var line in lines)
             {
+                
                 //separo la stringa utilizzando il delimitatore indicato
                 string[] Columns = line.Split(FileDelimiter);
                 double n;
@@ -453,14 +454,15 @@ namespace AssociaValoriQuota
                         //caso in cui il presente elenco sia ellissoidico, con "false" cerco nell'ortometrico tramite "Trovacorrispondente"
                         returnObject = TrovaCorrispondente(QuoteOrtometricheList, false, Est, Nord);
                         Quota_2 = returnObject.Quota;
-                        QuoteOrtometricheList.ToList().Remove(QuoteOrtometricheList.First(x=> x == returnObject.ItemToRemove));
+                        QuoteOrtometricheList.Remove(returnObject.ItemToRemove);
+                        int item = QuoteOrtometricheList.Count();
                     }
                     else
                     {
                         //caso in cui il presente elenco sia ortometrico, con "false" cerco nell'ellissoidico tramite "Trovacorrispondente"
                         returnObject = TrovaCorrispondente(QuoteEllissoidicheList,true, Est, Nord);
                         Quota_2 = returnObject.Quota;
-                        QuoteEllissoidicheList.ToList().Remove(QuoteEllissoidicheList.First(x=> x == returnObject.ItemToRemove));
+                        QuoteEllissoidicheList.Remove(returnObject.ItemToRemove);
                     }
                     //scrivo la riga in un file csv
                     string Quota_1 = string.Format("{0:#0.000}", Convert.ToDouble(Columns[campoQUOTA]));
