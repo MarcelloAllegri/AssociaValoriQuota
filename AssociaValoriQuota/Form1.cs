@@ -433,9 +433,9 @@ namespace AssociaValoriQuota
 
             /*apro il file per concatenare.*/
             var lines = ISelli_File == true ? QuoteEllissoidicheList : QuoteOrtometricheList;//System.IO.File.ReadLines(FilePath);
+
             foreach ( var line in lines)
             {
-                
                 //separo la stringa utilizzando il delimitatore indicato
                 string[] Columns = line.Split(FileDelimiter);
                 double n;
@@ -455,12 +455,12 @@ namespace AssociaValoriQuota
                         returnObject = TrovaCorrispondente(QuoteOrtometricheList, false, Est, Nord);
                         Quota_2 = returnObject.Quota;
                         QuoteOrtometricheList.Remove(returnObject.ItemToRemove);
-                        int item = QuoteOrtometricheList.Count();
+
                     }
                     else
                     {
                         //caso in cui il presente elenco sia ortometrico, con "false" cerco nell'ellissoidico tramite "Trovacorrispondente"
-                        returnObject = TrovaCorrispondente(QuoteEllissoidicheList,true, Est, Nord);
+                        returnObject = TrovaCorrispondente(QuoteEllissoidicheList, true, Est, Nord);
                         Quota_2 = returnObject.Quota;
                         QuoteEllissoidicheList.Remove(returnObject.ItemToRemove);
                     }
@@ -485,7 +485,9 @@ namespace AssociaValoriQuota
                 }
                 NumeroRiga++;
             }
+
             File.WriteAllText(SavePath, csv.ToString());
+
             MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
