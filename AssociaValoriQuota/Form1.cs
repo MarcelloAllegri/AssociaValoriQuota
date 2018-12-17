@@ -581,6 +581,7 @@ namespace AssociaValoriQuota
             return "Not found";
         }
 
+        #region Eventi CB
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             ComboBOXChangEvent(true, 0);
@@ -591,6 +592,7 @@ namespace AssociaValoriQuota
             ComboBOXChangEvent(true, 1);
         }
 
+        
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
             ComboBOXChangEvent(true, 2);
@@ -685,6 +687,6 @@ namespace AssociaValoriQuota
             //imposto la modalita' di selezione della textbox1-delimiter personalizzato
             textBox1.Select();
         }
-
+        #endregion
     }
 }
