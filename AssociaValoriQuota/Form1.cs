@@ -1,4 +1,5 @@
-﻿using System;
+﻿using AssociaValoriQuota.Classi;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -26,7 +27,7 @@ namespace AssociaValoriQuota
         static string GENERIClabel = "GENERICO";
         string[] ElliList = new string[3];
         string[] OrtoList = new string[3];
-
+        
         //cerco di mettere le combobox in due vettori
         public ComboBox[] ComboE = new ComboBox[10];
         public ComboBox[] ComboO = new ComboBox[10];
