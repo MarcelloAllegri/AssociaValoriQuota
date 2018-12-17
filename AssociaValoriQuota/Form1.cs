@@ -212,7 +212,6 @@ namespace AssociaValoriQuota
             radioButton5.Checked = false;
             radioButton6.Checked = false;
         }
- 
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -298,6 +297,7 @@ namespace AssociaValoriQuota
             AggiungiElementoImportante(combo, NORDlabel);
             AggiungiElementoImportante(combo, Quota);
         }
+
         private void CampiNonSegnalati()
         {
             MessageBox.Show("Non sono stati selezionati i campi relativi alle coordinate EST, NORD e QUOTE.","Errore", MessageBoxButtons.OK, MessageBoxIcon.Stop);
@@ -401,6 +401,9 @@ namespace AssociaValoriQuota
                 comboBox = ComboO;
             }
 
+            IEnumerable<string> QuoteEllissoidicheList=File.ReadLines(ELLI_File_Path);
+            IEnumerable<string> QuoteOrtometricheList= File.ReadLines(ORTO_File_Path);
+
             //controllo la completezza delle scelte utente sulle combobox
             bool Campisegnalati = ControllaCampiUtente();
             if(Campisegnalati == false)
@@ -429,8 +432,8 @@ namespace AssociaValoriQuota
             }
 
             /*apro il file per concatenare.*/
-            var lines = System.IO.File.ReadLines(FilePath);
-            foreach( var line in lines)
+            var lines = ISelli_File == true ? QuoteEllissoidicheList : QuoteOrtometricheList;//System.IO.File.ReadLines(FilePath);
+            foreach ( var line in lines)
             {
                 //separo la stringa utilizzando il delimitatore indicato
                 string[] Columns = line.Split(FileDelimiter);
@@ -444,18 +447,24 @@ namespace AssociaValoriQuota
                 {
                     Est = string.Format("{0:#0.000}", Convert.ToDouble(Columns[campoEST]));
                     Nord = string.Format("{0:#0.000}",Convert.ToDouble(Columns[campoNORD]));
+                    ReturnObject returnObject;
                     if (ISelli_File == true)
                     {
                         //caso in cui il presente elenco sia ellissoidico, con "false" cerco nell'ortometrico tramite "Trovacorrispondente"
-                        Quota_2 = TrovaCorrispondente(false, Est, Nord);
+                        returnObject = TrovaCorrispondente(QuoteOrtometricheList, false, Est, Nord);
+                        Quota_2 = returnObject.Quota;
+                        QuoteOrtometricheList.ToList().Remove(QuoteOrtometricheList.First(x=> x == returnObject.ItemToRemove));
                     }
                     else
                     {
                         //caso in cui il presente elenco sia ortometrico, con "false" cerco nell'ellissoidico tramite "Trovacorrispondente"
-                        Quota_2 = TrovaCorrispondente(true, Est, Nord);
+                        returnObject = TrovaCorrispondente(QuoteEllissoidicheList,true, Est, Nord);
+                        Quota_2 = returnObject.Quota;
+                        QuoteEllissoidicheList.ToList().Remove(QuoteEllissoidicheList.First(x=> x == returnObject.ItemToRemove));
                     }
                     //scrivo la riga in un file csv
                     string Quota_1 = string.Format("{0:#0.000}", Convert.ToDouble(Columns[campoQUOTA]));
+
                     if(double.TryParse(Quota_2, out n) == true)
                     {
                         double DeltaN = Math.Abs(Convert.ToDouble(Quota_1) - Convert.ToDouble(Quota_2));
@@ -510,7 +519,7 @@ namespace AssociaValoriQuota
             }
         }
 
-        public string TrovaCorrispondente(bool ISelli_File, string Est, string Nord)
+        public ReturnObject TrovaCorrispondente(IEnumerable<string> Data,bool ISelli_File, string Est, string Nord)
         {
             int campoEST = -1;
             int campoNORD = -1;
@@ -552,7 +561,7 @@ namespace AssociaValoriQuota
 
             /*apro il file per concatenare.*/
             //ERRORE
-            var lines = System.IO.File.ReadLines(FilePath);
+            var lines = Data;
             foreach (var line in lines)
             {
                 //separo la stringa utilizzando il delimitatore indicato
@@ -574,11 +583,11 @@ namespace AssociaValoriQuota
                     if(Distance < SearchRange)
                     {
                         //consegno, dalla funzione, il campo quota
-                        return string.Format("{0:#0.000}", Convert.ToDouble(Columns[campoQUOTA]));
+                        return new ReturnObject(string.Format("{0:#0.000}", Convert.ToDouble(Columns[campoQUOTA])),line);
                     }
                 }
             }
-            return "Not found";
+            return new ReturnObject(string.Empty, string.Empty);
         }
 
         #region Eventi CB
