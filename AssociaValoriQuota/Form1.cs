@@ -374,8 +374,47 @@ namespace AssociaValoriQuota
 
         private void button3_Click(object sender, EventArgs e)
         {
-            
+            suddividi();
 
+        }
+
+        private void suddividi()
+        {
+            int totElementi = ElliQuoteList.Count()/4;
+            if (ControllaCampiUtente() == true)
+            {
+                Task<IEnumerable<string>> task1 = Task<IEnumerable<string>>.Factory.StartNew(() =>
+                {
+                    return ConcatenaCampi(0, totElementi);
+                });
+
+                Task<IEnumerable<string>> task2 = Task<IEnumerable<string>>.Factory.StartNew(() =>
+                {
+                    return ConcatenaCampi(totElementi, totElementi*2);
+                });
+
+                Task<IEnumerable<string>> task3 = Task<IEnumerable<string>>.Factory.StartNew(() =>
+                {
+                    return ConcatenaCampi(totElementi * 2, totElementi * 3);
+                });
+
+                Task<IEnumerable<string>> task4 = Task<IEnumerable<string>>.Factory.StartNew(() =>
+                {
+                    return ConcatenaCampi(totElementi * 3, ElliQuoteList.Count());
+                });
+
+                Task.WaitAll(task1, task2, task3, task4);
+
+                var csv = new List<string>();
+                csv.AddRange(task1.Result);
+                csv.AddRange(task2.Result);
+                csv.AddRange(task3.Result);
+                csv.AddRange(task4.Result);
+
+                string SavePath = SaveCSVFilePath();
+                File.WriteAllText(SavePath, csv.ToString());
+                MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
         }
 
         private Boolean ControllaCampiUtente()
@@ -437,44 +476,38 @@ namespace AssociaValoriQuota
             }
         }
 
-        private void ConcatenaCampi()
+        private List<string> ConcatenaCampi(int inizio, int fine)
         {
             //LO SCOPO DI QUESTA SUBROUTINE E' QUELLO DI TROVARE I CAMPI EST E NORD E FORNIRE UN OUTPUT CONCATENATO DEI DUE, MEMORIZZANDO LA QUOTA
-
-            //int campoEST = -1;
-            //int campoNORD = -1;
-            //int campoQUOTA = -1;
-            //char FileDelimiter;
-            //string FilePath;
             string Est="";
             string Nord="";
             long NumeroRiga = 1;
-            //ComboBox [] comboBox;
-            string SavePath;
+            
+            //string SavePath;
             string OutputLine = "";
-
-            var csv = new StringBuilder();           
+            List<string> result = new List<string>();
+            //var csv = new StringBuilder();           
 
             //controllo la completezza delle scelte utente sulle combobox
-            bool Campisegnalati = ControllaCampiUtente();
-            if(Campisegnalati == false)
-            {
-                return;
-            }
+            //bool Campisegnalati = ControllaCampiUtente();
+            //if(Campisegnalati == false)
+            //{
+            //    return new List<string>();
+            //}
 
             //seleziono il percorso per il salvataggio
-            SavePath = SaveCSVFilePath();
+            //SavePath = SaveCSVFilePath();
 
             //ritrovo i campi che sono stati segnalati dall'utente
 
 
             /*apro il file per concatenare.*/
-            var lines = ElliQuoteList;
+            var lines = new List<string>(ElliQuoteList);
 
-            foreach ( var line in lines)
+            for (int k=inizio; k<fine;k++)
             {
                 //separo la stringa utilizzando il delimitatore indicato
-                string[] Columns = line.Split(ElliFile.FileDelimiter);
+                string[] Columns = lines[k].Split(ElliFile.FileDelimiter);
                 double n;
                 //verifico che l'attributo sia di tipo numerico, altrimenti passo alla linea successiva
                 bool IS_Estnumerica = double.TryParse(Columns[ElliFile.CampoEst], out n);
@@ -499,7 +532,8 @@ namespace AssociaValoriQuota
                     {
                         OutputLine = (Est + ";" + Nord + ";" + Quota_1 + ";" + Quota_2 + ";" + string.Format("{0:#0.000}", "Not Applicable"));
                     }
-                    csv.AppendLine(OutputLine);
+                    //csv.AppendLine(OutputLine);
+                    result.Add(OutputLine);
                 }
                 else
                 {
@@ -509,9 +543,9 @@ namespace AssociaValoriQuota
                 NumeroRiga++;
             }
 
-            File.WriteAllText(SavePath, csv.ToString());
-
-            MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //File.WriteAllText(SavePath, csv.ToString());
+            return result;
+            //MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         public string SaveCSVFilePath()
