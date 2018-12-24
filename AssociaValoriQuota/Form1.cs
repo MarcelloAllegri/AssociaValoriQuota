@@ -485,23 +485,9 @@ namespace AssociaValoriQuota
                 {
                     Est = string.Format("{0:#0.000}", Convert.ToDouble(Columns[ElliFile.CampoEst]));
                     Nord = string.Format("{0:#0.000}",Convert.ToDouble(Columns[ElliFile.CampoNord]));
-                    ReturnObject returnObject;
-                    //if (ISelli_File == true)
-                    //{
-                        //caso in cui il presente elenco sia ellissoidico, con "false" cerco nell'ortometrico tramite "Trovacorrispondente"
-                        returnObject = TrovaCorrispondente(OrtoQuoteList, false, Est, Nord);
-                        Quota_2 = returnObject.Quota;
-                   // OrtoQuoteList..Remove(returnObject.ItemToRemove);
-
-                    //}
-                    //else
-                    //{
-                    //    //caso in cui il presente elenco sia ortometrico, con "false" cerco nell'ellissoidico tramite "Trovacorrispondente"
-                    //    returnObject = TrovaCorrispondente(QuoteEllissoidicheList, true, Est, Nord);
-                    //    Quota_2 = returnObject.Quota;
-                    //    QuoteEllissoidicheList.Remove(returnObject.ItemToRemove);
-                    //}
-                    //scrivo la riga in un file csv
+                    ReturnObject returnObject = TrovaCorrispondente(OrtoQuoteList, Est, Nord);
+                    Quota_2 = returnObject.Quota;
+                   
                     string Quota_1 = string.Format("{0:#0.000}", Convert.ToDouble(Columns[ElliFile.CampoQuota]));
 
                     if(double.TryParse(Quota_2, out n) == true)
@@ -560,41 +546,21 @@ namespace AssociaValoriQuota
             }
         }
 
-        public ReturnObject TrovaCorrispondente(IEnumerable<string> Data,bool ISelli_File, string Est, string Nord)
-        {
-            //int campoEST = -1;
-            //int campoNORD = -1;
-            //int campoQUOTA = -1;
-            //char FileDelimiter;
-            //string FilePath;
-            //ComboBox[] comboBox;
-
-            //discrimino sul fatto che sia stato chiesto di analizzare il file delle quote ellissoidiche o quello di quelle ortometriche
-            
-                FileDelimiter = ORTO_delimiter;
-                FilePath = ORTO_File_Path;
-                comboBox = ComboO;
-            
-
-            //ritrovo i campi che sono stati segnalati dall'utente
-            
-
-            /*apro il file per concatenare.*/
-            //ERRORE
+        public ReturnObject TrovaCorrispondente(IEnumerable<string> Data, string Est, string Nord)
+        {   
             var lines = Data;
             foreach (var line in lines)
             {
                 //separo la stringa utilizzando il delimitatore indicato
-                string[] Columns = line.Split(FileDelimiter);
-                double n;
+                string[] Columns = line.Split(OrtoFile.FileDelimiter);
                 //verifico che l'attributo sia di tipo numerico, altrimenti passo alla linea successiva 
-                bool IS_Estnumerica = double.TryParse(Columns[campoEST], out n);
-                bool IS_Nordnumerica = double.TryParse(Columns[campoNORD], out n);
+                bool IS_Estnumerica = double.TryParse(Columns[OrtoFile.CampoEst], out double n);
+                bool IS_Nordnumerica = double.TryParse(Columns[OrtoFile.CampoNord], out n);
                 if (IS_Estnumerica == true && IS_Nordnumerica == true)
                 {
                     //Isolo la est e la nord di questo elenco di punti
-                    double Est_secondo_elenco = Convert.ToDouble(Columns[campoEST]);
-                    double Nord_secondo_elenco = Convert.ToDouble(Columns[campoNORD]);
+                    double Est_secondo_elenco = Convert.ToDouble(Columns[OrtoFile.CampoEst]);
+                    double Nord_secondo_elenco = Convert.ToDouble(Columns[OrtoFile.CampoNord]);
 
                     //Qua vado a calcolare la distanza tra il punto che ho ricevuto ed il punto attuale del secondo elenco
                     double Distance = Math.Sqrt(Math.Pow(Convert.ToDouble(Est) - Est_secondo_elenco, 2) + Math.Pow(Convert.ToDouble(Nord) - Nord_secondo_elenco, 2));
@@ -603,7 +569,7 @@ namespace AssociaValoriQuota
                     if(Distance < SearchRange)
                     {
                         //consegno, dalla funzione, il campo quota
-                        return new ReturnObject(string.Format("{0:#0.000}", Convert.ToDouble(Columns[campoQUOTA])),line);
+                        return new ReturnObject(string.Format("{0:#0.000}", Convert.ToDouble(Columns[OrtoFile.CampoQuota])),line);
                     }
                 }
             }
