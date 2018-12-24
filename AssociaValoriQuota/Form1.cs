@@ -39,10 +39,17 @@ namespace AssociaValoriQuota
 
         char ELLI_delimiter, ORTO_delimiter;
 
-        //ELABORAZIONE DATI
-
         string Quota_2;
         double SearchRange;
+
+        FileItemClass ElliFile; //--> Quote Ellisodiche
+        FileItemClass OrtoFile; //--> Quote Ortometriche
+
+        IEnumerable<string> ElliQuoteList;
+        IEnumerable<string> OrtoQuoteList;
+        //ELABORAZIONE DATI
+
+
 
         public Form1()
         {
@@ -161,7 +168,7 @@ namespace AssociaValoriQuota
             }
         }
 
-        private void GetFile(string OpenFDTitle, Boolean ISelli_File)
+        private void GetFileInfo(string OpenFDTitle, Boolean ISelli_File)
         {
             //checking if the delimiter has been selected
             DelimiterCheck();
@@ -182,12 +189,56 @@ namespace AssociaValoriQuota
                 //disabling comboboxes
                 if (ISelli_File == true)
                 {
-                    ELLI_File_Path = openFileDialog1.FileName;
+                    //ELLI_File_Path = openFileDialog1.FileName;
+                    ElliFile = new FileItemClass
+                    {
+                        FileDelimiter = ELLI_delimiter,
+                        Path = openFileDialog1.FileName,
+                    };
+
+                    for (int x = 0; x < 10; x++)
+                    {
+                        if (ComboE[x].Text == ESTlabel)
+                        {
+                            ElliFile.CampoEst = x;
+                        }
+                        else if (ComboE[x].Text == NORDlabel)
+                        {
+                            ElliFile.CampoNord = x;
+                        }
+                        else if (ComboE[x].Text == ELLIlabel)
+                        {
+                            ElliFile.CampoQuota = x;
+                        }
+                    }
+
                     ComboBoxEnabler(ComboE, CoordinateE);
                 }
                 else
                 {
-                    ORTO_File_Path = openFileDialog1.FileName;
+                    OrtoFile = new FileItemClass
+                    {
+                        FileDelimiter = ORTO_delimiter,
+                        Path = openFileDialog1.FileName,
+                    };
+                    //ORTO_File_Path = openFileDialog1.FileName;
+
+                    for (int x = 0; x < 10; x++)
+                    {
+                        if (ComboO[x].Text == ESTlabel)
+                        {
+                            OrtoFile.CampoEst = x;
+                        }
+                        else if (ComboO[x].Text == NORDlabel)
+                        {
+                            OrtoFile.CampoNord = x;
+                        }
+                        else if (ComboO[x].Text == ELLIlabel)
+                        {
+                            OrtoFile.CampoQuota = x;
+                        }
+                    }
+
                     ComboBoxEnabler(ComboO, CoordinateO);
                 }
             }
@@ -216,15 +267,33 @@ namespace AssociaValoriQuota
         private void button1_Click(object sender, EventArgs e)
         {
             ResetComboboxes(ComboE);
-            GetFile("Importa il file di coordinate ellissoidiche", true);
-            ResetAllRadioButtons();
+            GetFileInfo("Importa il file di coordinate ellissoidiche", true);
+            try
+            {
+                ElliQuoteList = File.ReadLines(ElliFile.Path);
+                ResetAllRadioButtons();
+                MessageBox.Show("File quote ellissoidiche importato!");
+            }
+            catch (Exception Ex)
+            {
+                MessageBox.Show ("Errore:\n Eccezione-> " + Ex.Message);
+            }            
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
             ResetComboboxes(ComboO);
-            GetFile("Importa il file di coordinate ortometriche", false);
-            ResetAllRadioButtons();
+            GetFileInfo("Importa il file di coordinate ortometriche", false);
+            try
+            {
+                OrtoQuoteList = File.ReadLines(OrtoFile.Path);
+                ResetAllRadioButtons();
+                MessageBox.Show("File coordinate ortometriche importato!");
+            }
+            catch (Exception Ex)
+            {
+                MessageBox.Show("Errore:\n Eccezione-> " + Ex.Message);
+            }            
         }
 
         private void openFileDialog1_FileOk(object sender, CancelEventArgs e)
@@ -305,8 +374,7 @@ namespace AssociaValoriQuota
 
         private void button3_Click(object sender, EventArgs e)
         {
-            //concatena campi chiede come argomento se si tratta del file a quote ellissoidiche
-            ConcatenaCampi(true);
+            
 
         }
 
@@ -369,40 +437,23 @@ namespace AssociaValoriQuota
             }
         }
 
-        private void ConcatenaCampi(bool ISelli_File)
+        private void ConcatenaCampi()
         {
             //LO SCOPO DI QUESTA SUBROUTINE E' QUELLO DI TROVARE I CAMPI EST E NORD E FORNIRE UN OUTPUT CONCATENATO DEI DUE, MEMORIZZANDO LA QUOTA
 
-            int campoEST = -1;
-            int campoNORD = -1;
-            int campoQUOTA = -1;
-            char FileDelimiter;
-            string FilePath;
+            //int campoEST = -1;
+            //int campoNORD = -1;
+            //int campoQUOTA = -1;
+            //char FileDelimiter;
+            //string FilePath;
             string Est="";
             string Nord="";
             long NumeroRiga = 1;
-            ComboBox [] comboBox;
+            //ComboBox [] comboBox;
             string SavePath;
             string OutputLine = "";
 
-            var csv = new StringBuilder();
-
-            //discrimino sul fatto che sia stato chiesto di analizzare il file delle quote ellissoidiche o quello di quelle ortometriche
-            if (ISelli_File == true)
-            {
-                FileDelimiter = ELLI_delimiter;
-                FilePath = ELLI_File_Path;
-                comboBox = ComboE;
-            }
-            else
-            {
-                FileDelimiter = ORTO_delimiter;
-                FilePath = ORTO_File_Path;
-                comboBox = ComboO;
-            }
-
-            List<string> QuoteEllissoidicheList=new List<string>(File.ReadLines(ELLI_File_Path));
-            List<string> QuoteOrtometricheList= new List<string>(File.ReadLines(ORTO_File_Path));
+            var csv = new StringBuilder();           
 
             //controllo la completezza delle scelte utente sulle combobox
             bool Campisegnalati = ControllaCampiUtente();
@@ -415,57 +466,43 @@ namespace AssociaValoriQuota
             SavePath = SaveCSVFilePath();
 
             //ritrovo i campi che sono stati segnalati dall'utente
-            for (int x = 0; x < 10; x++)
-            {
-                if (comboBox[x].Text == ESTlabel)
-                {
-                    campoEST = x;
-                }
-                else if (comboBox[x].Text == NORDlabel)
-                {
-                    campoNORD = x;
-                }
-                else if (comboBox[x].Text == ELLIlabel)
-                {
-                    campoQUOTA = x;
-                }
-            }
+
 
             /*apro il file per concatenare.*/
-            var lines = ISelli_File == true ? QuoteEllissoidicheList : QuoteOrtometricheList;//System.IO.File.ReadLines(FilePath);
+            var lines = ElliQuoteList;
 
             foreach ( var line in lines)
             {
                 //separo la stringa utilizzando il delimitatore indicato
-                string[] Columns = line.Split(FileDelimiter);
+                string[] Columns = line.Split(ElliFile.FileDelimiter);
                 double n;
                 //verifico che l'attributo sia di tipo numerico, altrimenti passo alla linea successiva
-                bool IS_Estnumerica = double.TryParse(Columns[campoEST], out n);
-                bool IS_Nordnumerica = double.TryParse(Columns[campoNORD], out n);
+                bool IS_Estnumerica = double.TryParse(Columns[ElliFile.CampoEst], out n);
+                bool IS_Nordnumerica = double.TryParse(Columns[ElliFile.CampoNord], out n);
 
                 //ASSOCIAZIONE DI QUOTA DEI DUE ELENCHI
                 if (IS_Estnumerica == true && IS_Nordnumerica == true)
                 {
-                    Est = string.Format("{0:#0.000}", Convert.ToDouble(Columns[campoEST]));
-                    Nord = string.Format("{0:#0.000}",Convert.ToDouble(Columns[campoNORD]));
+                    Est = string.Format("{0:#0.000}", Convert.ToDouble(Columns[ElliFile.CampoEst]));
+                    Nord = string.Format("{0:#0.000}",Convert.ToDouble(Columns[ElliFile.CampoNord]));
                     ReturnObject returnObject;
-                    if (ISelli_File == true)
-                    {
+                    //if (ISelli_File == true)
+                    //{
                         //caso in cui il presente elenco sia ellissoidico, con "false" cerco nell'ortometrico tramite "Trovacorrispondente"
-                        returnObject = TrovaCorrispondente(QuoteOrtometricheList, false, Est, Nord);
+                        returnObject = TrovaCorrispondente(OrtoQuoteList, false, Est, Nord);
                         Quota_2 = returnObject.Quota;
-                        QuoteOrtometricheList.Remove(returnObject.ItemToRemove);
+                   // OrtoQuoteList..Remove(returnObject.ItemToRemove);
 
-                    }
-                    else
-                    {
-                        //caso in cui il presente elenco sia ortometrico, con "false" cerco nell'ellissoidico tramite "Trovacorrispondente"
-                        returnObject = TrovaCorrispondente(QuoteEllissoidicheList, true, Est, Nord);
-                        Quota_2 = returnObject.Quota;
-                        QuoteEllissoidicheList.Remove(returnObject.ItemToRemove);
-                    }
+                    //}
+                    //else
+                    //{
+                    //    //caso in cui il presente elenco sia ortometrico, con "false" cerco nell'ellissoidico tramite "Trovacorrispondente"
+                    //    returnObject = TrovaCorrispondente(QuoteEllissoidicheList, true, Est, Nord);
+                    //    Quota_2 = returnObject.Quota;
+                    //    QuoteEllissoidicheList.Remove(returnObject.ItemToRemove);
+                    //}
                     //scrivo la riga in un file csv
-                    string Quota_1 = string.Format("{0:#0.000}", Convert.ToDouble(Columns[campoQUOTA]));
+                    string Quota_1 = string.Format("{0:#0.000}", Convert.ToDouble(Columns[ElliFile.CampoQuota]));
 
                     if(double.TryParse(Quota_2, out n) == true)
                     {
@@ -525,43 +562,22 @@ namespace AssociaValoriQuota
 
         public ReturnObject TrovaCorrispondente(IEnumerable<string> Data,bool ISelli_File, string Est, string Nord)
         {
-            int campoEST = -1;
-            int campoNORD = -1;
-            int campoQUOTA = -1;
-            char FileDelimiter;
-            string FilePath;
-            ComboBox[] comboBox;
+            //int campoEST = -1;
+            //int campoNORD = -1;
+            //int campoQUOTA = -1;
+            //char FileDelimiter;
+            //string FilePath;
+            //ComboBox[] comboBox;
 
             //discrimino sul fatto che sia stato chiesto di analizzare il file delle quote ellissoidiche o quello di quelle ortometriche
-            if (ISelli_File == true)
-            {
-                FileDelimiter = ELLI_delimiter;
-                FilePath = ELLI_File_Path;
-                comboBox = ComboE;
-            }
-            else
-            {
+            
                 FileDelimiter = ORTO_delimiter;
                 FilePath = ORTO_File_Path;
                 comboBox = ComboO;
-            }
+            
 
             //ritrovo i campi che sono stati segnalati dall'utente
-            for (int x = 0; x < 10; x++)
-            {
-                if (comboBox[x].Text == ESTlabel)
-                {
-                    campoEST = x;
-                }
-                else if (comboBox[x].Text == NORDlabel)
-                {
-                    campoNORD = x;
-                }
-                else if (comboBox[x].Text == ORTOlabel)
-                {
-                    campoQUOTA = x;
-                }
-            }
+            
 
             /*apro il file per concatenare.*/
             //ERRORE
