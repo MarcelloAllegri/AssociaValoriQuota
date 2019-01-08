@@ -45,8 +45,8 @@ namespace AssociaValoriQuota
         FileItemClass ElliFile; //--> Quote Ellisodiche
         FileItemClass OrtoFile; //--> Quote Ortometriche
 
-        ConcurrentQueue<string> ElliQuoteList;
-        ConcurrentQueue<string> OrtoQuoteList;
+        ConcurrentBag<string> ElliQuoteList;
+        ConcurrentBag<string> OrtoQuoteList;
         //ELABORAZIONE DATI
 
         public Form1()
@@ -269,7 +269,7 @@ namespace AssociaValoriQuota
             GetFileInfo("Importa il file di coordinate ellissoidiche", true);
             try
             {
-                ElliQuoteList = new ConcurrentQueue<string>(File.ReadLines(ElliFile.Path));
+                ElliQuoteList = new ConcurrentBag<string>(File.ReadLines(ElliFile.Path));
                 ResetAllRadioButtons();
                 MessageBox.Show("File quote ellissoidiche importato!");
             }
@@ -285,7 +285,7 @@ namespace AssociaValoriQuota
             GetFileInfo("Importa il file di coordinate ortometriche", false);
             try
             {
-                OrtoQuoteList = new ConcurrentQueue<string>(File.ReadLines(OrtoFile.Path));
+                OrtoQuoteList = new ConcurrentBag<string>(File.ReadLines(OrtoFile.Path));
                 ResetAllRadioButtons();
                 MessageBox.Show("File coordinate ortometriche importato!");
             }
@@ -375,37 +375,30 @@ namespace AssociaValoriQuota
         {
             suddividi();
         }
-        
+
         private void suddividi()
         {
             ConcurrentQueue<string> Result1 = new ConcurrentQueue<string>();
-            
-            int totElementi = ElliQuoteList.Count() / 4;
+
             enableLabels();
             long k = 0;
-            
-
+            List<Task> taskList = new List<Task>();
             if (ControllaCampiUtente() == true)
-            {                
-                Parallel.ForEach(ElliQuoteList, (item) =>
-                {                    
-                    Result1.Enqueue(ConcatenaCampi(item));
-                    Invoke(new MethodInvoker(delegate
-                    {
-                        progressBar1.Increment(1);
-                        progressBar1.Refresh();
-                        k++;
-                        label23.Text = k.ToString();
-                        label23.Refresh();
-                    }));
-                });
+            {
+                foreach (var item in ElliQuoteList)
+                {
+                    taskList.Add(Task.Run(() => { Result1.Enqueue(ConcatenaCampi(item)); }));
+                    k++;
+                }
 
-                
+
+
+                Task.WaitAll(taskList.ToArray());
                 var csv = new List<string>();
-                csv.AddRange(Result1);              
+                csv.AddRange(Result1.ToList<string>());
 
                 string SavePath = SaveCSVFilePath();
-                File.WriteAllText(SavePath, csv.ToString());
+                File.WriteAllLines(SavePath, csv);
                 MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
@@ -416,7 +409,9 @@ namespace AssociaValoriQuota
             label23.Text = "0";
             label24.Text = "of";
             progressBar1.Maximum = ElliQuoteList.Count();
-            label25.Text = ElliQuoteList.Count().ToString();
+            label25.Text = (ElliQuoteList.Count() / 2).ToString();
+            label24.Refresh();
+            label25.Refresh();
         }
 
         private Boolean ControllaCampiUtente()
@@ -502,7 +497,7 @@ namespace AssociaValoriQuota
                 Nord = string.Format("{0:#0.000}", Convert.ToDouble(Columns[ElliFile.CampoNord]));
                 ReturnObject returnObject = TrovaCorrispondente(Est, Nord);
                 string itemToRemove = returnObject.ItemToRemove;
-                bool elim = OrtoQuoteList.TryDequeue(out itemToRemove);
+                OrtoQuoteList.TryTake(out itemToRemove);
                 Quota_2 = returnObject.Quota;
 
                 string Quota_1 = string.Format("{0:#0.000}", Convert.ToDouble(Columns[ElliFile.CampoQuota]));
@@ -557,7 +552,7 @@ namespace AssociaValoriQuota
 
         public ReturnObject TrovaCorrispondente(string Est, string Nord)
         {
-            
+
             foreach (var line in OrtoQuoteList)
             {
                 //separo la stringa utilizzando il delimitatore indicato
@@ -696,7 +691,7 @@ namespace AssociaValoriQuota
         {
             //imposto la modalita' di selezione della textbox1-delimiter personalizzato
             textBox1.Select();
-        }        
+        }
         #endregion
 
 
