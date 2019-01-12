@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-
+using System.Windows.Threading;
 
 namespace AssociaValoriQuota
 
@@ -29,6 +29,8 @@ namespace AssociaValoriQuota
         static string GENERIClabel = "GENERICO";
         string[] ElliList = new string[3];
         string[] OrtoList = new string[3];
+        int k=0;
+        delegate void StringArgReturningVoidDelegate();
 
         //cerco di mettere le combobox in due vettori
         public ComboBox[] ComboE = new ComboBox[10];
@@ -39,14 +41,15 @@ namespace AssociaValoriQuota
 
         char ELLI_delimiter, ORTO_delimiter;
 
-        string Quota_2;
+        
         double SearchRange;
 
-        FileItemClass ElliFile; //--> Quote Ellisodiche
-        FileItemClass OrtoFile; //--> Quote Ortometriche
+        FileItemClass ElliFile = new FileItemClass(); //--> Quote Ellisodiche
+        FileItemClass OrtoFile = new FileItemClass(); //--> Quote Ortometriche
 
-        ConcurrentBag<string> ElliQuoteList;
-        ConcurrentBag<string> OrtoQuoteList;
+        List<Campi> ListaQuoteEllisoidiche = new List<Campi>();
+        List<Campi> ListaQuoteOrtometriche;
+        ConcurrentBag<string> Result1 = new ConcurrentBag<string>();
         //ELABORAZIONE DATI
 
         public Form1()
@@ -54,6 +57,7 @@ namespace AssociaValoriQuota
             InitializeComponent();
             openFileDialog1.Filter = "Files di testo (*.txt)|*.txt|Files xyz (*.xyz)|*.xyz|All Files|*";
             openFileDialog1.FilterIndex = 3;
+            enableLabels();
 
         }
 
@@ -63,24 +67,12 @@ namespace AssociaValoriQuota
             ComboE[0] = comboBox1;
             ComboE[1] = comboBox2;
             ComboE[2] = comboBox3;
-            ComboE[3] = comboBox4;
-            ComboE[4] = comboBox5;
-            ComboE[5] = comboBox6;
-            ComboE[6] = comboBox7;
-            ComboE[7] = comboBox8;
-            ComboE[8] = comboBox9;
-            ComboE[9] = comboBox10;
+           
             //per le quote ortometriche
             ComboO[0] = comboBox20;
             ComboO[1] = comboBox19;
             ComboO[2] = comboBox18;
-            ComboO[3] = comboBox17;
-            ComboO[4] = comboBox16;
-            ComboO[5] = comboBox15;
-            ComboO[6] = comboBox14;
-            ComboO[7] = comboBox13;
-            ComboO[8] = comboBox12;
-            ComboO[9] = comboBox11;
+            
 
         }
 
@@ -189,63 +181,25 @@ namespace AssociaValoriQuota
                 if (ISelli_File == true)
                 {
                     //ELLI_File_Path = openFileDialog1.FileName;
-                    ElliFile = new FileItemClass
-                    {
-                        FileDelimiter = ELLI_delimiter,
-                        Path = openFileDialog1.FileName,
-                    };
-
-                    for (int x = 0; x < 10; x++)
-                    {
-                        if (ComboE[x].Text == ESTlabel)
-                        {
-                            ElliFile.CampoEst = x;
-                        }
-                        else if (ComboE[x].Text == NORDlabel)
-                        {
-                            ElliFile.CampoNord = x;
-                        }
-                        else if (ComboE[x].Text == ELLIlabel)
-                        {
-                            ElliFile.CampoQuota = x;
-                        }
-                    }
-
+                    ElliFile.FileDelimiter = ELLI_delimiter;
+                    ElliFile.Path = openFileDialog1.FileName;
                     ComboBoxEnabler(ComboE, CoordinateE);
                 }
                 else
                 {
-                    OrtoFile = new FileItemClass
-                    {
-                        FileDelimiter = ORTO_delimiter,
-                        Path = openFileDialog1.FileName,
-                    };
+                    OrtoFile.FileDelimiter = ORTO_delimiter;
+                    OrtoFile.Path = openFileDialog1.FileName;
                     //ORTO_File_Path = openFileDialog1.FileName;
-
-                    for (int x = 0; x < 10; x++)
-                    {
-                        if (ComboO[x].Text == ESTlabel)
-                        {
-                            OrtoFile.CampoEst = x;
-                        }
-                        else if (ComboO[x].Text == NORDlabel)
-                        {
-                            OrtoFile.CampoNord = x;
-                        }
-                        else if (ComboO[x].Text == ELLIlabel)
-                        {
-                            OrtoFile.CampoQuota = x;
-                        }
-                    }
-
                     ComboBoxEnabler(ComboO, CoordinateO);
                 }
+                
             }
-        }
+            
+        }        
 
         private void ResetComboboxes(ComboBox[] combo)
         {
-            for (int x = 0; x < 10; x++)
+            for (int x = 0; x < 3; x++)
             {
                 combo[x].ResetText();
                 combo[x].Items.Clear();
@@ -269,7 +223,8 @@ namespace AssociaValoriQuota
             GetFileInfo("Importa il file di coordinate ellissoidiche", true);
             try
             {
-                ElliQuoteList = new ConcurrentBag<string>(File.ReadLines(ElliFile.Path));
+                List<string> ElliQuoteFile = new List<string>(File.ReadLines(ElliFile.Path));
+                SplitColumn(true, ElliQuoteFile);
                 ResetAllRadioButtons();
                 MessageBox.Show("File quote ellissoidiche importato!");
             }
@@ -279,13 +234,36 @@ namespace AssociaValoriQuota
             }
         }
 
+        private void SplitColumn(bool v,List<string> Quote)
+        {
+            if (v)
+            {
+                ListaQuoteEllisoidiche = new List<Campi>();
+                foreach (var item in Quote)
+                {
+                    string[] Columns = item.Split(ElliFile.FileDelimiter);
+                    ListaQuoteEllisoidiche.Add(new Campi(Convert.ToDouble(Columns[0]), Convert.ToDouble(Columns[1]), Convert.ToDouble(Columns[2])));
+                }
+            }
+            else
+            {
+                ListaQuoteOrtometriche = new List<Campi>();
+                foreach (var item in Quote)
+                {
+                    string[] Columns = item.Split(OrtoFile.FileDelimiter);
+                    ListaQuoteOrtometriche.Add(new Campi(Convert.ToDouble(Columns[0]), Convert.ToDouble(Columns[1]), Convert.ToDouble(Columns[2])));
+                }
+            }
+        }
+
         private void button2_Click(object sender, EventArgs e)
         {
             ResetComboboxes(ComboO);
             GetFileInfo("Importa il file di coordinate ortometriche", false);
             try
             {
-                OrtoQuoteList = new ConcurrentBag<string>(File.ReadLines(OrtoFile.Path));
+                List<string> OrtoQuoteList = new List<string>(File.ReadLines(OrtoFile.Path));
+                SplitColumn(false, OrtoQuoteList);
                 ResetAllRadioButtons();
                 MessageBox.Show("File coordinate ortometriche importato!");
             }
@@ -306,7 +284,7 @@ namespace AssociaValoriQuota
             if (combo[ComboIndex].Text == ItemName)
             {
                 //mi passo tutti le combobox (ad eccezione della corrente - i) e rimuovo il valore gia' trovato
-                for (int x = 0; x < 10; x++)
+                for (int x = 0; x < 3; x++)
                 {
                     //se non si tratta della combobox nella quale ho trovato il valore selezionato, lo elimino dalla lista
 
@@ -322,13 +300,13 @@ namespace AssociaValoriQuota
         {
             //AGGIUNGE UN ELEMENTO IMPORTANTE
             //quindi: mi passo tutte le combobox
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 3; i++)
             {
                 //interrompo la procedura di addizione, qualora il valore importante fosse stato trovato SELEZIONATO in una combobox
                 if (combo[i].Text == ItemName) { return; }
             }
             //NON HO TROVATO UN VALORE IMPORTANTE SELEZIONATO IN ALCUNA COMBOBOX
-            for (int x = 0; x < 10; x++)
+            for (int x = 0; x < 3; x++)
             {
                 //per ogni combobox, verifico che il valore non sia gia' presente
                 if (combo[x].Items.Contains(ItemName) == false)
@@ -347,18 +325,33 @@ namespace AssociaValoriQuota
             {
                 combo = ComboE;
                 Quota = ELLIlabel;
+
+                switch (combo[Index].Text)
+                {
+                    case "EST": ElliFile.CampoEst = Index; break;
+                    case "NORD": ElliFile.CampoNord = Index; break;
+                    case "Q_ELLIS": ElliFile.CampoQuota = Index; break;
+                }
             }
             else
             {
                 combo = ComboO;
                 Quota = ORTOlabel;
+
+                switch (combo[Index].Text)
+                {
+                    case "EST": OrtoFile.CampoEst = Index; break;
+                    case "NORD": OrtoFile.CampoNord = Index; break;
+                    case "Q_ORTO": OrtoFile.CampoQuota = Index; break;
+                }
             }
             //controllo se è stato selezionato un valore importante
-            if (combo[Index].Text != GENERIClabel)
+            if (combo[Index].Text != GENERIClabel && !string.IsNullOrEmpty(combo[Index].Text))
             {
                 //e' stato segnalato un valore univoco. rimuovo il valore dalle altre combobox
                 //ma devo valutare che se ho cambiato valore alla combobox, uno dei valori importanti potrebbe essere rientrato nell'elenco dei valori da aggiungere a tutte le altre
                 RimuoviElementoImportante(combo, Index, combo[Index].Text);
+
             }
             //controllo che siano presenti tutti i valori portanti in tutte le altre combobox, se suddetti valori non sono gia' stati selezionati in altre combobox
             AggiungiElementoImportante(combo, ESTlabel);
@@ -378,22 +371,21 @@ namespace AssociaValoriQuota
 
         private void suddividi()
         {
-            ConcurrentQueue<string> Result1 = new ConcurrentQueue<string>();
-
             enableLabels();
-            long k = 0;
-            List<Task> taskList = new List<Task>();
+            //List<Task> taskList = new List<Task>();
+            
             if (ControllaCampiUtente() == true)
             {
-                foreach (var item in ElliQuoteList)
+
+                foreach(var item in ListaQuoteEllisoidiche)
                 {
-                    taskList.Add(Task.Run(() => { Result1.Enqueue(ConcatenaCampi(item)); }));
-                    k++;
+                    ConcatenaCampi(item);
+                    progressBar1.Increment(1);
+                    label5.Text = progressBar1.Value.ToString();
+                    label5.Refresh();
                 }
 
-
-
-                Task.WaitAll(taskList.ToArray());
+                //Task.WaitAll(taskList.ToArray());
                 var csv = new List<string>();
                 csv.AddRange(Result1.ToList<string>());
 
@@ -403,15 +395,19 @@ namespace AssociaValoriQuota
             }
         }
 
+        private void SetText()
+        {
+            // InvokeRequired required compares the thread ID of the
+            // calling thread to the thread ID of the creating thread.
+            // If these threads are different, it returns true.
+            
+        }
+
         private void enableLabels()
         {
-            label23.Visible = label24.Visible = label25.Visible = true;
-            label23.Text = "0";
-            label24.Text = "of";
-            progressBar1.Maximum = ElliQuoteList.Count();
-            label25.Text = (ElliQuoteList.Count() / 2).ToString();
-            label24.Refresh();
-            label25.Refresh();
+            progressBar1.Minimum = 0;
+            progressBar1.Value = 0;
+            progressBar1.Maximum = ListaQuoteEllisoidiche.Count();
         }
 
         private Boolean ControllaCampiUtente()
@@ -429,7 +425,7 @@ namespace AssociaValoriQuota
                 SearchRange = 0.012;
             }
 
-            for (int X = 0; X < 10; X++)
+            for (int X = 0; X < 3; X++)
             {
                 if (ComboE[X].Enabled == true)
                 {
@@ -473,49 +469,14 @@ namespace AssociaValoriQuota
             }
         }
 
-        private string ConcatenaCampi(string item)
+        private void ConcatenaCampi(Campi item)
         {
-            //LO SCOPO DI QUESTA SUBROUTINE E' QUELLO DI TROVARE I CAMPI EST E NORD E FORNIRE UN OUTPUT CONCATENATO DEI DUE, MEMORIZZANDO LA QUOTA
-            string Est = "";
-            string Nord = "";
-            //long NumeroRiga = 1;
 
-            //string SavePath;
-            string OutputLine = "";
-
-            //separo la stringa utilizzando il delimitatore indicato
-            string[] Columns = item.Split(ElliFile.FileDelimiter);
-            double n;
-            //verifico che l'attributo sia di tipo numerico, altrimenti passo alla linea successiva
-            bool IS_Estnumerica = double.TryParse(Columns[ElliFile.CampoEst], out n);
-            bool IS_Nordnumerica = double.TryParse(Columns[ElliFile.CampoNord], out n);
-
-            //ASSOCIAZIONE DI QUOTA DEI DUE ELENCHI
-            if (IS_Estnumerica == true && IS_Nordnumerica == true)
-            {
-                Est = string.Format("{0:#0.000}", Convert.ToDouble(Columns[ElliFile.CampoEst]));
-                Nord = string.Format("{0:#0.000}", Convert.ToDouble(Columns[ElliFile.CampoNord]));
-                ReturnObject returnObject = TrovaCorrispondente(Est, Nord);
-                string itemToRemove = returnObject.ItemToRemove;
-                OrtoQuoteList.TryTake(out itemToRemove);
-                Quota_2 = returnObject.Quota;
-
-                string Quota_1 = string.Format("{0:#0.000}", Convert.ToDouble(Columns[ElliFile.CampoQuota]));
-
-                if (double.TryParse(Quota_2, out n) == true)
-                {
-                    double DeltaN = Math.Abs(Convert.ToDouble(Quota_1) - Convert.ToDouble(Quota_2));
-                    OutputLine = (Est + ";" + Nord + ";" + Quota_1 + ";" + Quota_2 + ";" + string.Format("{0:#0.000}", DeltaN));
-                }
-                else
-                {
-                    OutputLine = (Est + ";" + Nord + ";" + Quota_1 + ";" + Quota_2 + ";" + string.Format("{0:#0.000}", "Not Applicable"));
-                }
-
-            }
-
-            return OutputLine;
-            //MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            Campi campo = ListaQuoteOrtometriche.Find(x => (Math.Pow(item.CampoEst - x.CampoEst, 2) + Math.Pow(item.CampoNord - x.CampoNord, 2)) < SearchRange);
+            if (campo != null)
+                Result1.Add(item.getCoordinatesWithSeparator(';') + string.Format("{0:#0.000}",campo.CampoQuota)+";"+ (Math.Abs(item.CampoQuota - campo.CampoQuota).ToString()));
+            
+            
         }
 
         public string SaveCSVFilePath()
@@ -550,35 +511,7 @@ namespace AssociaValoriQuota
             }
         }
 
-        public ReturnObject TrovaCorrispondente(string Est, string Nord)
-        {
-
-            foreach (var line in OrtoQuoteList)
-            {
-                //separo la stringa utilizzando il delimitatore indicato
-                string[] Columns = line.Split(OrtoFile.FileDelimiter);
-                //verifico che l'attributo sia di tipo numerico, altrimenti passo alla linea successiva 
-                bool IS_Estnumerica = double.TryParse(Columns[OrtoFile.CampoEst], out double n);
-                bool IS_Nordnumerica = double.TryParse(Columns[OrtoFile.CampoNord], out n);
-                if (IS_Estnumerica == true && IS_Nordnumerica == true)
-                {
-                    //Isolo la est e la nord di questo elenco di punti
-                    double Est_secondo_elenco = Convert.ToDouble(Columns[OrtoFile.CampoEst]);
-                    double Nord_secondo_elenco = Convert.ToDouble(Columns[OrtoFile.CampoNord]);
-
-                    //Qua vado a calcolare la distanza tra il punto che ho ricevuto ed il punto attuale del secondo elenco
-                    double Distance = Math.Sqrt(Math.Pow(Convert.ToDouble(Est) - Est_secondo_elenco, 2) + Math.Pow(Convert.ToDouble(Nord) - Nord_secondo_elenco, 2));
-
-                    //se il valore e' inferiore al raggio di ricerca, considero il punto omologo
-                    if (Distance < SearchRange)
-                    {
-                        //consegno, dalla funzione, il campo quota
-                        return new ReturnObject(string.Format("{0:#0.000}", Convert.ToDouble(Columns[OrtoFile.CampoQuota])), line);
-                    }
-                }
-            }
-            return new ReturnObject(string.Empty, string.Empty);
-        }
+        
 
         #region Eventi CB
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -595,42 +528,7 @@ namespace AssociaValoriQuota
         private void comboBox3_SelectedIndexChanged(object sender, EventArgs e)
         {
             ComboBOXChangEvent(true, 2);
-        }
-
-        private void comboBox4_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(true, 3);
-        }
-
-        private void comboBox5_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(true, 4);
-        }
-
-        private void comboBox6_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(true, 5);
-        }
-
-        private void comboBox7_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(true, 6);
-        }
-
-        private void comboBox8_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(true, 7);
-        }
-
-        private void comboBox9_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(true, 8);
-        }
-
-        private void comboBox10_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(true, 9);
-        }
+        }        
 
         private void comboBox20_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -647,45 +545,7 @@ namespace AssociaValoriQuota
             ComboBOXChangEvent(false, 2);
         }
 
-        private void comboBox17_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(false, 3);
-        }
-
-        private void comboBox16_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(false, 4);
-        }
-
-        private void comboBox15_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(false, 5);
-        }
-
-        private void comboBox14_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(false, 6);
-        }
-
-        private void comboBox13_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(false, 7);
-        }
-
-        private void comboBox12_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(false, 8);
-        }
-
-        private void comboBox11_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            ComboBOXChangEvent(false, 9);
-        }
-
-        private void label24_Click(object sender, EventArgs e)
-        {
-
-        }
+        
 
         private void radioButton6_CheckedChanged(object sender, EventArgs e)
         {
