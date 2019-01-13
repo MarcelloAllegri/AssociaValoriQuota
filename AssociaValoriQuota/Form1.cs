@@ -40,8 +40,10 @@ namespace AssociaValoriQuota
         string[] CoordinateO = { GENERIClabel, NORDlabel, ESTlabel, ORTOlabel };
 
         char ELLI_delimiter, ORTO_delimiter;
+        List<string> ElliQuoteFile;
+        List<string> OrtoQuoteFile;
 
-        
+
         double SearchRange;
 
         FileItemClass ElliFile = new FileItemClass(); //--> Quote Ellisodiche
@@ -57,8 +59,6 @@ namespace AssociaValoriQuota
             InitializeComponent();
             openFileDialog1.Filter = "Files di testo (*.txt)|*.txt|Files xyz (*.xyz)|*.xyz|All Files|*";
             openFileDialog1.FilterIndex = 3;
-            enableLabels();
-
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -223,8 +223,8 @@ namespace AssociaValoriQuota
             GetFileInfo("Importa il file di coordinate ellissoidiche", true);
             try
             {
-                List<string> ElliQuoteFile = new List<string>(File.ReadLines(ElliFile.Path));
-                SplitColumn(true, ElliQuoteFile);
+                ElliQuoteFile = new List<string>(File.ReadLines(ElliFile.Path));
+                
                 ResetAllRadioButtons();
                 MessageBox.Show("File quote ellissoidiche importato!");
             }
@@ -242,7 +242,10 @@ namespace AssociaValoriQuota
                 foreach (var item in Quote)
                 {
                     string[] Columns = item.Split(ElliFile.FileDelimiter);
-                    ListaQuoteEllisoidiche.Add(new Campi(Convert.ToDouble(Columns[0]), Convert.ToDouble(Columns[1]), Convert.ToDouble(Columns[2])));
+                    ListaQuoteEllisoidiche.Add(new Campi(
+                        Convert.ToDouble(Columns[ElliFile.CampoEst]),
+                        Convert.ToDouble(Columns[ElliFile.CampoNord]),
+                        Convert.ToDouble(Columns[ElliFile.CampoQuota])));
                 }
             }
             else
@@ -251,7 +254,10 @@ namespace AssociaValoriQuota
                 foreach (var item in Quote)
                 {
                     string[] Columns = item.Split(OrtoFile.FileDelimiter);
-                    ListaQuoteOrtometriche.Add(new Campi(Convert.ToDouble(Columns[0]), Convert.ToDouble(Columns[1]), Convert.ToDouble(Columns[2])));
+                    ListaQuoteOrtometriche.Add(new Campi(
+                        Convert.ToDouble(Columns[OrtoFile.CampoEst]),
+                        Convert.ToDouble(Columns[OrtoFile.CampoNord]),
+                        Convert.ToDouble(Columns[OrtoFile.CampoQuota])));
                 }
             }
         }
@@ -262,8 +268,8 @@ namespace AssociaValoriQuota
             GetFileInfo("Importa il file di coordinate ortometriche", false);
             try
             {
-                List<string> OrtoQuoteList = new List<string>(File.ReadLines(OrtoFile.Path));
-                SplitColumn(false, OrtoQuoteList);
+                OrtoQuoteFile = new List<string>(File.ReadLines(OrtoFile.Path));
+                
                 ResetAllRadioButtons();
                 MessageBox.Show("File coordinate ortometriche importato!");
             }
@@ -366,6 +372,14 @@ namespace AssociaValoriQuota
 
         private void button3_Click(object sender, EventArgs e)
         {
+            Task[] splitTask = new Task[]
+            {
+                Task.Factory.StartNew(() => SplitColumn(true,ElliQuoteFile)),
+                Task.Factory.StartNew(() => SplitColumn(false,OrtoQuoteFile))
+            };
+
+            Task.WaitAll(splitTask);
+
             suddividi();
         }
 
@@ -380,9 +394,7 @@ namespace AssociaValoriQuota
                 foreach(var item in ListaQuoteEllisoidiche)
                 {
                     ConcatenaCampi(item);
-                    progressBar1.Increment(1);
-                    label5.Text = progressBar1.Value.ToString();
-                    label5.Refresh();
+                    progressBar1.Increment(1);                   
                 }
 
                 //Task.WaitAll(taskList.ToArray());
@@ -393,15 +405,7 @@ namespace AssociaValoriQuota
                 File.WriteAllLines(SavePath, csv);
                 MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
-        }
-
-        private void SetText()
-        {
-            // InvokeRequired required compares the thread ID of the
-            // calling thread to the thread ID of the creating thread.
-            // If these threads are different, it returns true.
-            
-        }
+        }       
 
         private void enableLabels()
         {
@@ -474,9 +478,10 @@ namespace AssociaValoriQuota
 
             Campi campo = ListaQuoteOrtometriche.Find(x => (Math.Pow(item.CampoEst - x.CampoEst, 2) + Math.Pow(item.CampoNord - x.CampoNord, 2)) < SearchRange);
             if (campo != null)
-                Result1.Add(item.getCoordinatesWithSeparator(';') + string.Format("{0:#0.000}",campo.CampoQuota)+";"+ (Math.Abs(item.CampoQuota - campo.CampoQuota).ToString()));
-            
-            
+            {
+                Result1.Add(item.getCoordinatesWithSeparator(';') + string.Format("{0:#0.000}", campo.CampoQuota) + ";" + (Math.Abs(item.CampoQuota - campo.CampoQuota).ToString()));
+                ListaQuoteOrtometriche.Remove(item);
+            }
         }
 
         public string SaveCSVFilePath()
@@ -509,9 +514,7 @@ namespace AssociaValoriQuota
             {
                 goto retry;
             }
-        }
-
-        
+        }        
 
         #region Eventi CB
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
@@ -545,7 +548,10 @@ namespace AssociaValoriQuota
             ComboBOXChangEvent(false, 2);
         }
 
-        
+        private void radioButton2_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
 
         private void radioButton6_CheckedChanged(object sender, EventArgs e)
         {
@@ -553,7 +559,5 @@ namespace AssociaValoriQuota
             textBox1.Select();
         }
         #endregion
-
-
     }
 }
