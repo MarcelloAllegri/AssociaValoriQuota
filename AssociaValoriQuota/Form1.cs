@@ -391,11 +391,14 @@ namespace AssociaValoriQuota
             if (ControllaCampiUtente() == true)
             {
 
-                foreach(var item in ListaQuoteEllisoidiche)
-                {
-                    ConcatenaCampi(item);
-                    progressBar1.Increment(1);                   
-                }
+                Parallel.ForEach(ListaQuoteEllisoidiche, (item) =>
+                 {
+                     ConcatenaCampi(item);
+                     Invoke(new MethodInvoker(() => progressBar1.Increment(1)));
+                 });
+                //{
+                                       
+                //}
 
                 //Task.WaitAll(taskList.ToArray());
                 var csv = new List<string>();
