@@ -483,7 +483,7 @@ namespace AssociaValoriQuota
             if (campo != null)
             {
                 Result1.Add(item.getCoordinatesWithSeparator(';') + string.Format("{0:#0.000}", campo.CampoQuota) + ";" + (Math.Abs(item.CampoQuota - campo.CampoQuota).ToString()));
-                ListaQuoteOrtometriche.Remove(item);
+                ListaQuoteOrtometriche.Remove(campo);
             }
         }
 

@@ -359,9 +359,9 @@
             this.pictureBox1.ErrorImage = null;
             this.pictureBox1.Image = global::AssociaValoriQuota.Properties.Resources.LOGO_TRASPARENTE;
             this.pictureBox1.InitialImage = global::AssociaValoriQuota.Properties.Resources.LOGO_TRASPARENTE;
-            this.pictureBox1.Location = new System.Drawing.Point(-7, 12);
+            this.pictureBox1.Location = new System.Drawing.Point(8, 12);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(497, 0);
+            this.pictureBox1.Size = new System.Drawing.Size(497, 65);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox1.TabIndex = 53;
             this.pictureBox1.TabStop = false;
@@ -399,7 +399,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ButtonFace;
-            this.ClientSize = new System.Drawing.Size(499, 506);
+            this.ClientSize = new System.Drawing.Size(517, 510);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.pictureBox1);
