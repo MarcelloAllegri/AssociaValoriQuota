@@ -52,6 +52,7 @@ namespace AssociaValoriQuota
         List<Campi> ListaQuoteEllisoidiche = new List<Campi>();
         List<Campi> ListaQuoteOrtometriche;
         ConcurrentBag<string> Result1 = new ConcurrentBag<string>();
+        ConcurrentBag<string> NotApplicableList = new ConcurrentBag<string>();
         //ELABORAZIONE DATI
 
         public Form1()
@@ -387,7 +388,15 @@ namespace AssociaValoriQuota
         {
             enableLabels();
             //List<Task> taskList = new List<Task>();
-            
+            string SavePath = SaveCSVFilePath();
+            string SavePathNotApplicable = Path.GetDirectoryName(SavePath);
+            SavePathNotApplicable = SavePathNotApplicable + "\\" + Path.GetFileNameWithoutExtension(SavePath) + "_Not_Applicable.csv";
+            if (File.Exists(SavePathNotApplicable) == false)
+            {
+                var myfile = File.Create(SavePathNotApplicable);
+                myfile.Close();
+            }
+
             if (ControllaCampiUtente() == true)
             {
 
@@ -404,8 +413,10 @@ namespace AssociaValoriQuota
                 var csv = new List<string>();
                 csv.AddRange(Result1.ToList<string>());
 
-                string SavePath = SaveCSVFilePath();
+                
                 File.WriteAllLines(SavePath, csv);
+                File.WriteAllLines(SavePathNotApplicable, NotApplicableList);
+
                 MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }       
@@ -478,13 +489,20 @@ namespace AssociaValoriQuota
 
         private void ConcatenaCampi(Campi item)
         {
-
-            Campi campo = ListaQuoteOrtometriche.Find(x => (Math.Pow(item.CampoEst - x.CampoEst, 2) + Math.Pow(item.CampoNord - x.CampoNord, 2)) < SearchRange);
-            if (campo != null)
+            try
             {
-                Result1.Add(item.getCoordinatesWithSeparator(';') + string.Format("{0:#0.000}", campo.CampoQuota) + ";" + (Math.Abs(item.CampoQuota - campo.CampoQuota).ToString()));
-                ListaQuoteOrtometriche.Remove(campo);
+                Campi campo = ListaQuoteOrtometriche.Find(x => (Math.Pow(item.CampoEst - x.CampoEst, 2) + Math.Pow(item.CampoNord - x.CampoNord, 2)) < SearchRange);
+                if (campo != null)
+                {
+                    Result1.Add(item.getCoordinatesWithSeparator(';') + string.Format("{0:#0.000}", campo.CampoQuota) + ";" + (Math.Abs(item.CampoQuota - campo.CampoQuota).ToString()));
+                    ListaQuoteOrtometriche.Remove(campo);
+                }
             }
+            catch (Exception)
+            {
+                NotApplicableList.Add(item.getCoordinatesWithSeparator(';') + " Not Applicable;");
+            }
+            
         }
 
         public string SaveCSVFilePath()
