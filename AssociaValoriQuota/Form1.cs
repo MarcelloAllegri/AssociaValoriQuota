@@ -394,19 +394,17 @@ namespace AssociaValoriQuota
             if (ControllaCampiUtente() == true)
             {
 
-                //Parallel.ForEach(ListaQuoteEllisoidiche, (item) =>
-                // {
-                //     ConcatenaCampi(item);
-                //     Invoke(new MethodInvoker(() => progressBar1.Increment(1)));
-                // });
+                Parallel.ForEach(ListaQuoteEllisoidiche, (item) =>
+                 {
+                     ConcatenaCampi(item);
+                     Invoke(new MethodInvoker(() => progressBar1.Increment(1)));
+                 });
 
-                for (int i = 0; i < 1000; i++)
-                {
-                    ConcatenaCampi(ListaQuoteEllisoidiche[i]);
-                }
+                //for (int i = 0; i < 1000; i++)
+                //{
+                //    ConcatenaCampi(ListaQuoteEllisoidiche[i]);
+                //}
 
-                //File.WriteAllLines(SavePath, Result1.ToList());
-                //File.WriteAllLines(SavePathNotApplicable, NotApplicableList);
                 SaveFiles();
 
                 MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
