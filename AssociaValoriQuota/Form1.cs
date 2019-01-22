@@ -387,35 +387,27 @@ namespace AssociaValoriQuota
         private void suddividi()
         {
             enableLabels();
-            //List<Task> taskList = new List<Task>();
-            string SavePath = SaveCSVFilePath();
-            string SavePathNotApplicable = Path.GetDirectoryName(SavePath);
-            SavePathNotApplicable = SavePathNotApplicable + "\\" + Path.GetFileNameWithoutExtension(SavePath) + "_Not_Applicable.csv";
-            if (File.Exists(SavePathNotApplicable) == false)
-            {
-                var myfile = File.Create(SavePathNotApplicable);
-                myfile.Close();
-            }
+
+            //string SavePath = SaveCSVFilePath();
+            
 
             if (ControllaCampiUtente() == true)
             {
 
-                Parallel.ForEach(ListaQuoteEllisoidiche, (item) =>
-                 {
-                     ConcatenaCampi(item);
-                     Invoke(new MethodInvoker(() => progressBar1.Increment(1)));
-                 });
-                //{
-                                       
-                //}
+                //Parallel.ForEach(ListaQuoteEllisoidiche, (item) =>
+                // {
+                //     ConcatenaCampi(item);
+                //     Invoke(new MethodInvoker(() => progressBar1.Increment(1)));
+                // });
 
-                //Task.WaitAll(taskList.ToArray());
-                var csv = new List<string>();
-                csv.AddRange(Result1.ToList<string>());
+                for (int i = 0; i < 1000; i++)
+                {
+                    ConcatenaCampi(ListaQuoteEllisoidiche[i]);
+                }
 
-                
-                File.WriteAllLines(SavePath, csv);
-                File.WriteAllLines(SavePathNotApplicable, NotApplicableList);
+                //File.WriteAllLines(SavePath, Result1.ToList());
+                //File.WriteAllLines(SavePathNotApplicable, NotApplicableList);
+                SaveFiles();
 
                 MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
@@ -505,37 +497,61 @@ namespace AssociaValoriQuota
             
         }
 
-        public string SaveCSVFilePath()
+        public void SaveFiles()
         {
+            bool retry = true;
             SaveFileDialog SaveFileDialog1 = new SaveFileDialog();
-            saveFileDialog1.Title = "Salva";
+            saveFileDialog1.Title = "Salva File Risultato";
             saveFileDialog1.Filter = "csv files (*.csv)|*.csv";
-        retry:
-            if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+            while (retry)
             {
-                if (File.Exists(saveFileDialog1.FileName) == false)
+                if (saveFileDialog1.ShowDialog() == DialogResult.OK)
                 {
-                    var myfile = File.Create(saveFileDialog1.FileName);
-                    myfile.Close();
-                }
-                try
-                {
-                    using (Stream stream = new FileStream(saveFileDialog1.FileName, FileMode.Open))
+                    if (File.Exists(saveFileDialog1.FileName) == false)
                     {
-                        return saveFileDialog1.FileName;
+                        //var Resultfile = File.Create(saveFileDialog1.FileName);
+                        File.AppendAllLines(saveFileDialog1.FileName, Result1.ToList());
+                        retry = false;
+                        //Resultfile.Close();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Il file e' correntemente in uso, si prega di chiuderlo. (File risultato)", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        retry = true;
+                    }                    
+                }
+                else
+                {
+                    retry = true;
+                }                
+            }
+
+            retry = true;
+            while (retry)
+            {
+                if (saveFileDialog1.ShowDialog() == DialogResult.OK)
+                {
+                    //string SavePathNotApplicable = Path.GetDirectoryName(saveFileDialog1.FileName);
+                    //SavePathNotApplicable = SavePathNotApplicable + "\\" + Path.GetFileNameWithoutExtension(saveFileDialog1.FileName) + "_Not_Applicable.csv";
+                    if (File.Exists(saveFileDialog1.FileName) == false)
+                    {
+                        //var myfile = File.Create(SavePathNotApplicable);
+                        File.AppendAllLines(saveFileDialog1.FileName, NotApplicableList.ToList());
+                        retry = false;
+                        //myfile.Close();
+                    }
+                    else
+                    {
+                        retry = true;
+                        MessageBox.Show("Il file e' correntemente in uso, si prega di chiuderlo. (File quote non applicabili)", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
-                catch
+                else
                 {
-                    MessageBox.Show("Il file e' correntemente in uso, si prega di chiuderlo.", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    goto retry;
+                    retry = true;
                 }
             }
-            else
-            {
-                goto retry;
-            }
-        }        
+        }
 
         #region Eventi CB
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
