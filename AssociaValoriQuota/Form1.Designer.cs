@@ -52,7 +52,6 @@
             this.radioButton3 = new System.Windows.Forms.RadioButton();
             this.radioButton2 = new System.Windows.Forms.RadioButton();
             this.label21 = new System.Windows.Forms.Label();
-            this.button3 = new System.Windows.Forms.Button();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.label22 = new System.Windows.Forms.Label();
             this.textBox2 = new System.Windows.Forms.TextBox();
@@ -61,6 +60,7 @@
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.groupBox2 = new System.Windows.Forms.GroupBox();
+            this.button3 = new System.Windows.Forms.Button();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.groupBox2.SuspendLayout();
@@ -307,17 +307,6 @@
             this.label21.TabIndex = 44;
             this.label21.Text = "ASSOCIA AD UN ELENCO DI QUOTE ELLISSOIDICHE, LA CORRISPONDENTE ORTOMETRICA";
             // 
-            // button3
-            // 
-            this.button3.Location = new System.Drawing.Point(167, 358);
-            this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(178, 40);
-            this.button3.TabIndex = 45;
-            this.button3.Text = "GENERA FILE CSV";
-            this.button3.UseVisualStyleBackColor = true;
-            this.button3.UseWaitCursor = true;
-            this.button3.Click += new System.EventHandler(this.button3_Click);
-            // 
             // openFileDialog1
             // 
             this.openFileDialog1.FileName = "openFileDialog1";
@@ -394,19 +383,29 @@
             this.groupBox2.TabStop = false;
             this.groupBox2.Text = "Scelta ordine dei campi";
             // 
+            // button3
+            // 
+            this.button3.Location = new System.Drawing.Point(160, 356);
+            this.button3.Name = "button3";
+            this.button3.Size = new System.Drawing.Size(185, 40);
+            this.button3.TabIndex = 56;
+            this.button3.Text = "Genera File CSV";
+            this.button3.UseVisualStyleBackColor = true;
+            this.button3.Click += new System.EventHandler(this.button3_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ButtonFace;
             this.ClientSize = new System.Drawing.Size(517, 510);
+            this.Controls.Add(this.button3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.pictureBox1);
             this.Controls.Add(this.label6);
             this.Controls.Add(this.textBox2);
             this.Controls.Add(this.label22);
-            this.Controls.Add(this.button3);
             this.Controls.Add(this.label21);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.button2);
@@ -451,7 +450,6 @@
         private System.Windows.Forms.RadioButton radioButton3;
         private System.Windows.Forms.RadioButton radioButton2;
         private System.Windows.Forms.Label label21;
-        private System.Windows.Forms.Button button3;
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
         private System.Windows.Forms.Label label22;
         private System.Windows.Forms.TextBox textBox2;
@@ -460,6 +458,7 @@
         private System.Windows.Forms.PictureBox pictureBox1;
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.GroupBox groupBox2;
+        private System.Windows.Forms.Button button3;
     }
 }
 
