@@ -388,8 +388,8 @@ namespace AssociaValoriQuota
         {
             enableLabels();
 
-            //string SavePath = SaveCSVFilePath();
-            
+            Result1 = new ConcurrentBag<string>();
+            NotApplicableList = new ConcurrentBag<string>();
 
             if (ControllaCampiUtente() == true)
             {
@@ -484,13 +484,13 @@ namespace AssociaValoriQuota
                 Campi campo = ListaQuoteOrtometriche.Find(x => (Math.Pow(item.CampoEst - x.CampoEst, 2) + Math.Pow(item.CampoNord - x.CampoNord, 2)) < SearchRange);
                 if (campo != null)
                 {
-                    Result1.Add(item.getCoordinatesWithSeparator(';') + string.Format("{0:#0.000}", campo.CampoQuota) + ";" + (Math.Abs(item.CampoQuota - campo.CampoQuota).ToString()));
+                    Result1.Add(item.getCoordinatesWithSeparator(',') + string.Format("{0:#0.000}", campo.CampoQuota) + "," + (Math.Abs(item.CampoQuota - campo.CampoQuota).ToString()));
                     ListaQuoteOrtometriche.Remove(campo);
                 }
             }
             catch (Exception)
             {
-                NotApplicableList.Add(item.getCoordinatesWithSeparator(';') + " Not Applicable;");
+                NotApplicableList.Add(item.getCoordinatesWithSeparator(',') + " Not Applicable,");
             }
             
         }
@@ -509,6 +509,9 @@ namespace AssociaValoriQuota
                     {
                         //var Resultfile = File.Create(saveFileDialog1.FileName);
                         File.AppendAllLines(saveFileDialog1.FileName, Result1.ToList());
+                        string SavePathNotApplicable = Path.GetDirectoryName(saveFileDialog1.FileName);
+                        SavePathNotApplicable = SavePathNotApplicable + "\\" + Path.GetFileNameWithoutExtension(saveFileDialog1.FileName) + "_NotApplicable.csv";
+                        File.AppendAllLines(SavePathNotApplicable, NotApplicableList.ToList());
                         retry = false;
                         //Resultfile.Close();
                     }
@@ -521,33 +524,7 @@ namespace AssociaValoriQuota
                 else
                 {
                     retry = true;
-                }                
-            }
-
-            retry = true;
-            while (retry)
-            {
-                if (saveFileDialog1.ShowDialog() == DialogResult.OK)
-                {
-                    //string SavePathNotApplicable = Path.GetDirectoryName(saveFileDialog1.FileName);
-                    //SavePathNotApplicable = SavePathNotApplicable + "\\" + Path.GetFileNameWithoutExtension(saveFileDialog1.FileName) + "_Not_Applicable.csv";
-                    if (File.Exists(saveFileDialog1.FileName) == false)
-                    {
-                        //var myfile = File.Create(SavePathNotApplicable);
-                        File.AppendAllLines(saveFileDialog1.FileName, NotApplicableList.ToList());
-                        retry = false;
-                        //myfile.Close();
-                    }
-                    else
-                    {
-                        retry = true;
-                        MessageBox.Show("Il file e' correntemente in uso, si prega di chiuderlo. (File quote non applicabili)", "Errore", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                }
-                else
-                {
-                    retry = true;
-                }
+                }                         
             }
         }
 
