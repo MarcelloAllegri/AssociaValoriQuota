@@ -33,8 +33,8 @@ namespace AssociaValoriQuota
         delegate void StringArgReturningVoidDelegate();
 
         //cerco di mettere le combobox in due vettori
-        public ComboBox[] ComboE = new ComboBox[10];
-        public ComboBox[] ComboO = new ComboBox[10];
+        public ComboBox[] ComboE = new ComboBox[3];
+        public ComboBox[] ComboO = new ComboBox[3];
 
         string[] CoordinateE = { GENERIClabel, NORDlabel, ESTlabel, ELLIlabel };
         string[] CoordinateO = { GENERIClabel, NORDlabel, ESTlabel, ORTOlabel };
@@ -145,7 +145,7 @@ namespace AssociaValoriQuota
         private void ComboBoxEnabler(ComboBox[] combo, string[] Coordinate)
         {
             //enable all comboboxes
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 3; i++)
             {
                 if (ColumnsNumber >= i)
                 {
@@ -242,11 +242,14 @@ namespace AssociaValoriQuota
                 ListaQuoteEllisoidiche = new List<Campi>();
                 foreach (var item in Quote)
                 {
-                    string[] Columns = item.Split(ElliFile.FileDelimiter);
-                    ListaQuoteEllisoidiche.Add(new Campi(
-                        Convert.ToDouble(Columns[ElliFile.CampoEst]),
-                        Convert.ToDouble(Columns[ElliFile.CampoNord]),
-                        Convert.ToDouble(Columns[ElliFile.CampoQuota])));
+                    if (!string.IsNullOrEmpty(item))
+                    {
+                        string[] Columns = item.Split(ElliFile.FileDelimiter);
+                        ListaQuoteEllisoidiche.Add(new Campi(
+                            Convert.ToDouble(Columns[ElliFile.CampoEst]),
+                            Convert.ToDouble(Columns[ElliFile.CampoNord]),
+                            Convert.ToDouble(Columns[ElliFile.CampoQuota])));
+                    }
                 }
             }
             else
@@ -254,11 +257,14 @@ namespace AssociaValoriQuota
                 ListaQuoteOrtometriche = new List<Campi>();
                 foreach (var item in Quote)
                 {
-                    string[] Columns = item.Split(OrtoFile.FileDelimiter);
-                    ListaQuoteOrtometriche.Add(new Campi(
-                        Convert.ToDouble(Columns[OrtoFile.CampoEst]),
-                        Convert.ToDouble(Columns[OrtoFile.CampoNord]),
-                        Convert.ToDouble(Columns[OrtoFile.CampoQuota])));
+                    if (!string.IsNullOrEmpty(item))
+                    {
+                        string[] Columns = item.Split(OrtoFile.FileDelimiter);
+                        ListaQuoteOrtometriche.Add(new Campi(
+                            Convert.ToDouble(Columns[OrtoFile.CampoEst]),
+                            Convert.ToDouble(Columns[OrtoFile.CampoNord]),
+                            Convert.ToDouble(Columns[OrtoFile.CampoQuota])));
+                    }
                 }
             }
         }
@@ -390,24 +396,32 @@ namespace AssociaValoriQuota
 
             Result1 = new ConcurrentBag<string>();
             NotApplicableList = new ConcurrentBag<string>();
-
+            List<Task> TaskList = new List<Task>();
             if (ControllaCampiUtente() == true)
             {
 
-                Parallel.ForEach(ListaQuoteEllisoidiche, (item) =>
-                 {
-                     ConcatenaCampi(item);
-                     Invoke(new MethodInvoker(() => progressBar1.Increment(1)));
-                 });
+                
+                
+                foreach (var item in ListaQuoteEllisoidiche)
+                {
+                    
+                    TaskList.Add(Task.Factory.StartNew(() =>
+                    {
+                        ConcatenaCampi(item);
 
-                //for (int i = 0; i < 1000; i++)
-                //{
-                //    ConcatenaCampi(ListaQuoteEllisoidiche[i]);
-                //}
+                    }).ContinueWith((parentTask) => { Invoke(new MethodInvoker(() => progressBar1.Increment(1))); }));
 
-                SaveFiles();
+                    
+                }
 
-                MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                Task.Factory.ContinueWhenAll(TaskList.ToArray(), completedTasks => {
+
+                    Invoke(new MethodInvoker(() =>  SaveFiles()));
+
+                    
+                });
+
+                
             }
         }       
 
@@ -477,7 +491,7 @@ namespace AssociaValoriQuota
             }
         }
 
-        private void ConcatenaCampi(Campi item)
+        public void ConcatenaCampi(Campi item)
         {
             try
             {
@@ -514,6 +528,7 @@ namespace AssociaValoriQuota
                         File.AppendAllLines(SavePathNotApplicable, NotApplicableList.ToList());
                         retry = false;
                         //Resultfile.Close();
+                        MessageBox.Show("Procedura di associazione completata." + System.Environment.NewLine + "Elenco esportato come EST - NORD - Q_ELLI - Q_ORTO - DELTA_N", "Operazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
