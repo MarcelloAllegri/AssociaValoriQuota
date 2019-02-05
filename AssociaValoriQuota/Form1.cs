@@ -491,11 +491,21 @@ namespace AssociaValoriQuota
             }
         }
 
-        public void ConcatenaCampi(Campi item)
+        private void ConcatenaCampi(Campi item)
+        {
+            int firstResult = SearchCampo(item, 0);
+            if (firstResult == -1)
+            {
+                int secondResult = SearchCampo(item, SearchRange);
+                if (secondResult == -1) NotApplicableList.Add(item.getCoordinatesWithSeparator(',') + " Not Applicable,");
+            }
+        }
+
+        public int SearchCampo(Campi item, double searchRange)
         {
             try
             {
-                Campi campo = ListaQuoteOrtometriche.Find(x => (Math.Pow(item.CampoEst - x.CampoEst, 2) + Math.Pow(item.CampoNord - x.CampoNord, 2)) < SearchRange);
+                Campi campo = ListaQuoteOrtometriche.Find(x => item.CampoEst - x.CampoEst < searchRange && item.CampoNord - x.CampoNord == searchRange);
                 if (campo != null)
                 {
                     Result1.Add(item.getCoordinatesWithSeparator(',') + string.Format("{0:#0.000}", campo.CampoQuota) + "," + (Math.Abs(item.CampoQuota - campo.CampoQuota).ToString()));
@@ -504,9 +514,10 @@ namespace AssociaValoriQuota
             }
             catch (Exception)
             {
-                NotApplicableList.Add(item.getCoordinatesWithSeparator(',') + " Not Applicable,");
+                return -1;
             }
-            
+
+            return 0;
         }
 
         public void SaveFiles()
